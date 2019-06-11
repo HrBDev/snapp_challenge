@@ -21,6 +21,19 @@ class S implements WidgetsLocalizations {
   @override
   TextDirection get textDirection => TextDirection.ltr;
 
+  String get map_screen_drawer_about => "";
+  String get map_screen_drawer_credit_plus => "";
+  String get map_screen_drawer_exit => "";
+  String get map_screen_drawer_fav_addresses => "";
+  String get map_screen_drawer_invite => "";
+  String get map_screen_drawer_messages => "";
+  String get map_screen_drawer_rides => "";
+  String get map_screen_drawer_settings => "";
+  String get map_screen_drawer_snapp_food_promotion => "";
+  String get map_screen_drawer_support => "";
+  String get map_screen_drawer_transactions => "";
+  String get map_screen_drawer_usr_info => "";
+  String get map_screen_title => "";
 }
 
 class fa_IR extends S {
@@ -29,6 +42,32 @@ class fa_IR extends S {
    @override
   TextDirection get textDirection => TextDirection.rtl;
 
+  @override
+  String get map_screen_drawer_fav_addresses => "آدرس‌های منتخب";
+  @override
+  String get map_screen_title => "کجا هستید ؟";
+  @override
+  String get map_screen_drawer_settings => "تنظیمات";
+  @override
+  String get map_screen_drawer_rides => "سفرها";
+  @override
+  String get map_screen_drawer_about => "درباره اسنپ";
+  @override
+  String get map_screen_drawer_invite => "سفر رایگان با دعوت از دوستان";
+  @override
+  String get map_screen_drawer_exit => "خروج";
+  @override
+  String get map_screen_drawer_credit_plus => "افزایش اعتبار";
+  @override
+  String get map_screen_drawer_snapp_food_promotion => "با اسنپ فود، آنلاین غذا سفارش دهید";
+  @override
+  String get map_screen_drawer_messages => "پیام‌ها";
+  @override
+  String get map_screen_drawer_support => "پشتیبانی";
+  @override
+  String get map_screen_drawer_usr_info => "اطلاعات کاربری";
+  @override
+  String get map_screen_drawer_transactions => "گردش حساب";
 }
 
 class en extends S {

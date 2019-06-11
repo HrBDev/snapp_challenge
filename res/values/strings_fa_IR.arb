@@ -1,1 +1,15 @@
-{}
+{
+  "map_screen_title": "کجا هستید ؟",
+  "map_screen_drawer_credit_plus": "افزایش اعتبار",
+  "map_screen_drawer_usr_info": "اطلاعات کاربری",
+  "map_screen_drawer_transactions": "گردش حساب",
+  "map_screen_drawer_rides": "سفرها",
+  "map_screen_drawer_fav_addresses": "آدرس‌های منتخب",
+  "map_screen_drawer_messages": "پیام‌ها",
+  "map_screen_drawer_support": "پشتیبانی",
+  "map_screen_drawer_settings": "تنظیمات",
+  "map_screen_drawer_about": "درباره اسنپ",
+  "map_screen_drawer_exit": "خروج",
+  "map_screen_drawer_invite": "سفر رایگان با دعوت از دوستان",
+  "map_screen_drawer_snapp_food_promotion": "با اسنپ فود، آنلاین غذا سفارش دهید"
+}

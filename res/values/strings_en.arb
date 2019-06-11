@@ -1,1 +1,15 @@
-{}
+{
+  "map_screen_title": "",
+  "map_screen_drawer_credit_plus": "",
+  "map_screen_drawer_usr_info": "",
+  "map_screen_drawer_transactions": "",
+  "map_screen_drawer_rides": "",
+  "map_screen_drawer_fav_addresses": "",
+  "map_screen_drawer_messages": "",
+  "map_screen_drawer_support": "",
+  "map_screen_drawer_settings": "",
+  "map_screen_drawer_about": "",
+  "map_screen_drawer_exit": "",
+  "map_screen_drawer_invite": "",
+  "map_screen_drawer_snapp_food_promotion": ""
+}
