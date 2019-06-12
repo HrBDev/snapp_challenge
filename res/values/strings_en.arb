@@ -11,5 +11,8 @@
   "map_screen_drawer_about": "",
   "map_screen_drawer_exit": "",
   "map_screen_drawer_invite": "",
-  "map_screen_drawer_snapp_food_promotion": ""
+  "map_screen_drawer_snapp_food_promotion": "",
+  "map_screen_available_snapps": "",
+  "map_screen_origin": "",
+  "map_screen_destination": ""
 }

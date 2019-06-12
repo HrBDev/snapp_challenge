@@ -11,5 +11,8 @@
   "map_screen_drawer_about": "درباره اسنپ",
   "map_screen_drawer_exit": "خروج",
   "map_screen_drawer_invite": "سفر رایگان با دعوت از دوستان",
-  "map_screen_drawer_snapp_food_promotion": "با اسنپ فود، آنلاین غذا سفارش دهید"
+  "map_screen_drawer_snapp_food_promotion": "با اسنپ فود، آنلاین غذا سفارش دهید",
+  "map_screen_available_snapps": "اسنپ موجود",
+  "map_screen_origin": "مبدأ",
+  "map_screen_destination": "مقصد"
 }

@@ -1,10 +1,14 @@
 import 'dart:async';
 
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:selectable_circle/selectable_circle.dart';
 import 'package:snapp_challenge/constants.dart';
 import 'package:snapp_challenge/generated/i18n.dart';
+import 'package:snapp_challenge/utils.dart';
 
 class MapScreen extends StatefulWidget {
   @override
@@ -16,6 +20,31 @@ const LatLng _kMapCenter = LatLng(35.6892, 51.3890); // Middle of Tehran
 class _MapScreenState extends State<MapScreen> {
   Completer<GoogleMapController> _controller = Completer();
   GoogleMapController controller;
+  bool isDestination = false;
+  bool isDestinationSet = false;
+
+  _createHoveringMarker() {
+    return Align(
+        alignment: Alignment.center,
+        child: _DestinationMarker(
+          title: isDestination
+              ? S.of(context).map_screen_destination
+              : S.of(context).map_screen_origin,
+          onTap: () {
+            if (!isDestination) {
+              setState(() {
+                isDestination = true;
+                //TODO: set origin marker on map(requires asset or use default marker image)
+              });
+            } else if (isDestination) {
+              setState(() {
+                isDestinationSet = true;
+              });
+              //TODO: set destination marker(requires asset or use default marker image)
+            }
+          },
+        ));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +71,10 @@ class _MapScreenState extends State<MapScreen> {
             onMapCreated: (controller) => _controller.complete(controller),
             initialCameraPosition:
                 const CameraPosition(target: _kMapCenter, zoom: 15.0),
-            compassEnabled: true,
+            compassEnabled: false,
+            tiltGesturesEnabled: false,
             myLocationEnabled: true,
-            myLocationButtonEnabled: false,
+            myLocationButtonEnabled: true,
             cameraTargetBounds: CameraTargetBounds(
               // Limit map to Iran
               LatLngBounds(
@@ -56,47 +86,98 @@ class _MapScreenState extends State<MapScreen> {
           ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: Container(
-              width: double.infinity,
-              child: Card(
-                margin: EdgeInsets.zero,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: <Widget>[
-                    Text('۳ اسنپ موجود'),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                      child: Row(children: <Widget>[
-                        Expanded(
-                          child: Divider(
-                            color: Colors.black38,
-                          ),
-                        ),
-                        Icon(
-                          Icons.location_on,
-                          color: Constants.green[1],
-                          size: 16,
-                        ),
-                        Expanded(
-                          child: Divider(
-                            color: Colors.black38,
-                          ),
-                        )
-                      ]),
-                    ),
-                    Text(':مبدا')
-                  ],
-                ),
-              ),
+            child: _BottomPanel(
+              topText: isDestination
+                  ? S.of(context).map_screen_origin + ":"
+                  : '${Utils.replaceFarsiNumber('3')} ${S.of(context).map_screen_available_snapps}',
+              bottomText: isDestination
+                  ? S.of(context).map_screen_destination + ":"
+                  : S.of(context).map_screen_origin + ":",
             ),
           ),
-          Align(
-              alignment: Alignment.center,
-              child: _DestinationMarker(
-                title: 'مبدا',
-                onTap: () {},
-              ))
+          isDestinationSet ? SizedBox.shrink() : _createHoveringMarker(),
         ],
+      ),
+      bottomSheet: Container(
+        height: MediaQuery.of(context).size.height / 3.5,
+        child: !isDestinationSet
+            ? Column(
+                mainAxisSize: MainAxisSize.min,
+                children: <Widget>[
+                  Expanded(
+                    flex: 3,
+                    child: ListView(
+                      shrinkWrap: true,
+                      padding: EdgeInsets.symmetric(horizontal: 16.0),
+                      scrollDirection: Axis.horizontal,
+                      children: <Widget>[
+                        _CircleAvatar(
+                          imagePath: 'res/images/bike.png',
+                          title: 'موتور ویژه مسافر',
+                        ),
+                        _CircleAvatar(
+                          imagePath: 'res/images/box.png',
+                          title: ' موتور ویژه مرسولات',
+                        ),
+                        _CircleAvatar(
+                          imagePath: 'res/images/rose.png',
+                          title: 'ویژه بانوان',
+                        ),
+                        _CircleAvatar(
+                          imagePath: 'res/images/eco.png',
+                          title: 'به‌صرفه و فوری',
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4.0),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: <Widget>[
+                          FlatButton(
+                            child: Text(
+                              'کد تخفیف',
+                              style: TextStyle(color: Constants.green[1]),
+                            ),
+                            onPressed: () {},
+                          ),
+                          VerticalDivider(
+                            color: Colors.black38,
+                          ),
+                          Text('۶۰,۰۰۰ ریال'),
+                          VerticalDivider(
+                            color: Colors.black38,
+                          ),
+                          FlatButton(
+                            child: Text('گزینه ها',
+                                style: TextStyle(color: Constants.green[1])),
+                            onPressed: () {},
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  Container(
+                    height: 50,
+                    width: double.infinity,
+                    color: Constants.blue[1],
+                    child: Container(
+                      height: 50,
+                      margin: EdgeInsets.symmetric(
+                          horizontal: MediaQuery.of(context).size.width / 4),
+                      child: Center(
+                          child: Text(
+                        'درخواست اسنپ اکو',
+                        style: TextStyle(color: Colors.white, fontSize: 18),
+                      )),
+                      color: Constants.green[1],
+                    ),
+                  )
+                ],
+              )
+            : SizedBox.shrink(),
       ),
     );
   }
@@ -357,6 +438,91 @@ class _DestinationMarker extends StatelessWidget {
         ),
       ),
       onTap: onTap,
+    );
+  }
+}
+
+class _BottomPanel extends StatelessWidget {
+  final String topText;
+  final String bottomText;
+
+  _BottomPanel({@required this.topText, this.bottomText});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      child: Card(
+        margin: EdgeInsets.zero,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: <Widget>[
+            Text(topText),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0),
+              child: Row(children: <Widget>[
+                Expanded(
+                  child: Divider(
+                    color: Colors.black38,
+                  ),
+                ),
+                Icon(
+                  Icons.location_on,
+                  color: Constants.green[1],
+                  size: 16,
+                ),
+                Expanded(
+                  child: Divider(
+                    color: Colors.black38,
+                  ),
+                )
+              ]),
+            ),
+            Text(bottomText)
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CircleAvatar extends StatelessWidget {
+  final String title;
+  final String imagePath;
+
+  _CircleAvatar({@required this.title, @required this.imagePath});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+      child: Container(
+        height: 1,
+        width: 75,
+        child: Column(
+          children: <Widget>[
+            SelectableCircle(
+              //TODO: implement selectable
+              child: CircleAvatar(
+                child: Image.asset(imagePath),
+                maxRadius: double.infinity,
+              ),
+              width: 75,
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: Text(
+                title,
+                style: TextStyle(
+                  fontSize: 9,
+                  wordSpacing: -0.9,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            )
+          ],
+        ),
+      ),
     );
   }
 }
