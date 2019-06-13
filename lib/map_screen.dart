@@ -5,7 +5,6 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:selectable_circle/selectable_circle.dart';
 import 'package:snapp_challenge/constants.dart';
 import 'package:snapp_challenge/generated/i18n.dart';
 import 'package:snapp_challenge/utils.dart';
@@ -17,9 +16,17 @@ class MapScreen extends StatefulWidget {
 
 const LatLng _kMapCenter = LatLng(35.6892, 51.3890); // Middle of Tehran
 
+// Limit map to Iran
+LatLngBounds _kIranBounds = LatLngBounds(
+  southwest: const LatLng(30, 44),
+  northeast: const LatLng(36, 60),
+);
+
 class _MapScreenState extends State<MapScreen> {
   Completer<GoogleMapController> _controller = Completer();
   GoogleMapController controller;
+
+  //TODO: implement state management using InheritedWidget or ScopedModel
   bool isDestination = false;
   bool isDestinationSet = false;
 
@@ -72,27 +79,30 @@ class _MapScreenState extends State<MapScreen> {
             initialCameraPosition:
                 const CameraPosition(target: _kMapCenter, zoom: 15.0),
             compassEnabled: false,
+            rotateGesturesEnabled: false,
             tiltGesturesEnabled: false,
             myLocationEnabled: true,
             myLocationButtonEnabled: true,
-            cameraTargetBounds: CameraTargetBounds(
-              // Limit map to Iran
-              LatLngBounds(
-                southwest: LatLng(30, 44),
-                northeast: LatLng(36, 60),
-              ),
-            ),
-            minMaxZoomPreference: MinMaxZoomPreference(5, 20),
+            cameraTargetBounds: CameraTargetBounds(_kIranBounds),
+            minMaxZoomPreference: const MinMaxZoomPreference(5, 20),
           ),
           Align(
             alignment: Alignment.bottomCenter,
-            child: _BottomPanel(
-              topText: isDestination
-                  ? S.of(context).map_screen_origin + ":"
-                  : '${Utils.replaceFarsiNumber('3')} ${S.of(context).map_screen_available_snapps}',
-              bottomText: isDestination
-                  ? S.of(context).map_screen_destination + ":"
-                  : S.of(context).map_screen_origin + ":",
+            child: AnimatedCrossFade(
+              duration: Duration(milliseconds: 500),
+              firstChild: _BottomPanel(
+                  key: UniqueKey(),
+                  topText: S.of(context).map_screen_origin + ":",
+                  bottomText: S.of(context).map_screen_destination + ":"),
+              secondChild: _BottomPanel(
+                key: UniqueKey(),
+                topText:
+                    '${Utils.replaceFarsiNumber('3')} ${S.of(context).map_screen_available_snapps}',
+                bottomText: S.of(context).map_screen_origin + ":",
+              ),
+              crossFadeState: isDestination
+                  ? CrossFadeState.showFirst
+                  : CrossFadeState.showSecond,
             ),
           ),
           isDestinationSet ? SizedBox.shrink() : _createHoveringMarker(),
@@ -100,84 +110,12 @@ class _MapScreenState extends State<MapScreen> {
       ),
       bottomSheet: Container(
         height: MediaQuery.of(context).size.height / 3.5,
-        child: !isDestinationSet
-            ? Column(
-                mainAxisSize: MainAxisSize.min,
-                children: <Widget>[
-                  Expanded(
-                    flex: 3,
-                    child: ListView(
-                      shrinkWrap: true,
-                      padding: EdgeInsets.symmetric(horizontal: 16.0),
-                      scrollDirection: Axis.horizontal,
-                      children: <Widget>[
-                        _CircleAvatar(
-                          imagePath: 'res/images/bike.png',
-                          title: 'موتور ویژه مسافر',
-                        ),
-                        _CircleAvatar(
-                          imagePath: 'res/images/box.png',
-                          title: ' موتور ویژه مرسولات',
-                        ),
-                        _CircleAvatar(
-                          imagePath: 'res/images/rose.png',
-                          title: 'ویژه بانوان',
-                        ),
-                        _CircleAvatar(
-                          imagePath: 'res/images/eco.png',
-                          title: 'به‌صرفه و فوری',
-                        ),
-                      ],
-                    ),
-                  ),
-                  Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 4.0),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: <Widget>[
-                          FlatButton(
-                            child: Text(
-                              'کد تخفیف',
-                              style: TextStyle(color: Constants.green[1]),
-                            ),
-                            onPressed: () {},
-                          ),
-                          VerticalDivider(
-                            color: Colors.black38,
-                          ),
-                          Text('۶۰,۰۰۰ ریال'),
-                          VerticalDivider(
-                            color: Colors.black38,
-                          ),
-                          FlatButton(
-                            child: Text('گزینه ها',
-                                style: TextStyle(color: Constants.green[1])),
-                            onPressed: () {},
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Container(
-                    height: 50,
-                    width: double.infinity,
-                    color: Constants.blue[1],
-                    child: Container(
-                      height: 50,
-                      margin: EdgeInsets.symmetric(
-                          horizontal: MediaQuery.of(context).size.width / 4),
-                      child: Center(
-                          child: Text(
-                        'درخواست اسنپ اکو',
-                        style: TextStyle(color: Colors.white, fontSize: 18),
-                      )),
-                      color: Constants.green[1],
-                    ),
-                  )
-                ],
-              )
-            : SizedBox.shrink(),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: isDestinationSet
+              ? _ChooseServiceBottomSheet()
+              : SizedBox.shrink(),
+        ),
       ),
     );
   }
@@ -191,6 +129,8 @@ class _Drawer extends StatelessWidget {
         children: <Widget>[
           Expanded(
             child: ListView(
+              addAutomaticKeepAlives: true,
+              addRepaintBoundaries: false,
               padding: EdgeInsets.zero,
               children: <Widget>[
                 DrawerHeader(
@@ -259,7 +199,7 @@ class _Drawer extends StatelessWidget {
             ),
           ),
           Container(
-            padding: EdgeInsets.symmetric(vertical: 8.0),
+            padding: const EdgeInsets.symmetric(vertical: 8.0),
             color: Constants.gray[1],
             child: Column(
               children: <Widget>[
@@ -446,51 +386,51 @@ class _BottomPanel extends StatelessWidget {
   final String topText;
   final String bottomText;
 
-  _BottomPanel({@required this.topText, this.bottomText});
+  _BottomPanel({Key key, @required this.topText, this.bottomText});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      child: Card(
-        margin: EdgeInsets.zero,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: <Widget>[
-            Text(topText),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16.0),
-              child: Row(children: <Widget>[
-                Expanded(
-                  child: Divider(
-                    color: Colors.black38,
-                  ),
+    return Card(
+      margin: EdgeInsets.zero,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: <Widget>[
+          Text(topText),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16.0),
+            child: Row(children: <Widget>[
+              Expanded(
+                child: Divider(
+                  color: Colors.black38,
                 ),
-                Icon(
-                  Icons.location_on,
-                  color: Constants.green[1],
-                  size: 16,
+              ),
+              Icon(
+                Icons.location_on,
+                color: Constants.green[1],
+                size: 16,
+              ),
+              Expanded(
+                child: Divider(
+                  color: Colors.black38,
                 ),
-                Expanded(
-                  child: Divider(
-                    color: Colors.black38,
-                  ),
-                )
-              ]),
-            ),
-            Text(bottomText)
-          ],
-        ),
+              )
+            ]),
+          ),
+          Text(bottomText)
+        ],
       ),
     );
   }
 }
 
-class _CircleAvatar extends StatelessWidget {
+class _MyCircleAvatar extends StatelessWidget {
   final String title;
   final String imagePath;
 
-  _CircleAvatar({@required this.title, @required this.imagePath});
+  _MyCircleAvatar({
+    @required this.title,
+    @required this.imagePath,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -501,13 +441,9 @@ class _CircleAvatar extends StatelessWidget {
         width: 75,
         child: Column(
           children: <Widget>[
-            SelectableCircle(
-              //TODO: implement selectable
-              child: CircleAvatar(
-                child: Image.asset(imagePath),
-                maxRadius: double.infinity,
-              ),
-              width: 75,
+            CircleAvatar(
+              child: Image.asset(imagePath),
+              maxRadius: double.infinity,
             ),
             Align(
               alignment: Alignment.bottomCenter,
@@ -523,6 +459,137 @@ class _CircleAvatar extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ChooseServiceBottomSheet extends StatefulWidget {
+  @override
+  __ChooseServiceBottomSheetState createState() =>
+      __ChooseServiceBottomSheetState();
+}
+
+class __ChooseServiceBottomSheetState extends State<_ChooseServiceBottomSheet>
+    with SingleTickerProviderStateMixin {
+  Animation animation;
+  AnimationController animationController;
+  bool isAnimationCompleted = false;
+
+  @override
+  void initState() {
+    super.initState();
+    animationController =
+        AnimationController(duration: Duration(seconds: 3), vsync: this);
+
+    animation = IntTween(begin: 45000, end: 21000).animate(CurvedAnimation(
+        parent: animationController, curve: Curves.fastOutSlowIn));
+
+    animationController.forward();
+
+    animationController.addStatusListener((status) {
+      if (status == AnimationStatus.completed) {
+        setState(() {
+          isAnimationCompleted = true;
+        });
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Expanded(
+          flex: 3,
+          child: ListView(
+            shrinkWrap: true,
+            padding: EdgeInsets.symmetric(horizontal: 16.0),
+            scrollDirection: Axis.horizontal,
+            children: <Widget>[
+              _MyCircleAvatar(
+                imagePath: 'res/images/bike.png',
+                title: 'موتور ویژه مسافر',
+              ),
+              _MyCircleAvatar(
+                imagePath: 'res/images/box.png',
+                title: ' موتور ویژه مرسولات',
+              ),
+              _MyCircleAvatar(
+                imagePath: 'res/images/rose.png',
+                title: 'ویژه بانوان',
+              ),
+              _MyCircleAvatar(
+                imagePath: 'res/images/eco.png',
+                title: 'به‌صرفه و فوری',
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 4.0),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: <Widget>[
+                FlatButton(
+                  child: Text(
+                    'کد تخفیف',
+                    style: TextStyle(color: Constants.green[1]),
+                  ),
+                  onPressed: () {},
+                ),
+                VerticalDivider(
+                  color: Colors.black38,
+                ),
+                Row(
+                  children: <Widget>[
+                    AnimatedBuilder(
+                      animation: animationController,
+                      builder: (BuildContext context, Widget child) {
+                        return Text(
+                          isAnimationCompleted
+                              ? '۶۰۰۰۰'
+                              : Utils.replaceFarsiNumber(
+                                  animation.value.toString()),
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold),
+                        );
+                      },
+                    ),
+                    SizedBox(width: 8.0,),
+                    Text('ریال'),
+                  ],
+                ),
+                VerticalDivider(
+                  color: Colors.black38,
+                ),
+                FlatButton(
+                  child: Text('گزینه ها',
+                      style: TextStyle(color: Constants.green[1])),
+                  onPressed: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+        Container(
+          height: 50,
+          width: double.infinity,
+          color: Constants.blue[1],
+          child: Container(
+            height: 50,
+            margin: EdgeInsets.symmetric(
+                horizontal: MediaQuery.of(context).size.width / 4),
+            child: Center(
+                child: Text(
+              'درخواست اسنپ اکو',
+              style: TextStyle(color: Colors.white, fontSize: 18),
+            )),
+            color: Constants.green[1],
+          ),
+        )
+      ],
     );
   }
 }
