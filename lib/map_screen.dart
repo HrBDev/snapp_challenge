@@ -1,122 +1,224 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:snapp_challenge/constants.dart';
 import 'package:snapp_challenge/generated/i18n.dart';
+import 'package:snapp_challenge/my_animations.dart';
 import 'package:snapp_challenge/utils.dart';
+
+enum States { origin, destinationSelect, serviceSelect }
 
 class MapScreen extends StatefulWidget {
   @override
   _MapScreenState createState() => _MapScreenState();
 }
 
-const LatLng _kMapCenter = LatLng(35.6892, 51.3890); // Middle of Tehran
-
-// Limit map to Iran
-LatLngBounds _kIranBounds = LatLngBounds(
-  southwest: const LatLng(30, 44),
-  northeast: const LatLng(36, 60),
+// Middle of Tehran
+const CameraPosition _kInitialPosition = CameraPosition(
+  target: LatLng(35.6892, 51.3890),
+  zoom: 15,
 );
 
 class _MapScreenState extends State<MapScreen> {
+  GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   Completer<GoogleMapController> _controller = Completer();
   GoogleMapController controller;
+  Size screenSize;
 
-  //TODO: implement state management using InheritedWidget or ScopedModel
-  bool isDestination = false;
-  bool isDestinationSet = false;
+  // Limit map to Iran
+  static final _kIranBounds = LatLngBounds(
+    southwest: const LatLng(30, 44),
+    northeast: const LatLng(36, 60),
+  );
+
+  //TODO: Use proper state management
+  var state = States.origin;
 
   _createHoveringMarker() {
     return Align(
         alignment: Alignment.center,
         child: _DestinationMarker(
-          title: isDestination
+          title: state == States.destinationSelect
               ? S.of(context).map_screen_destination
               : S.of(context).map_screen_origin,
           onTap: () {
-            if (!isDestination) {
-              setState(() {
-                isDestination = true;
-                //TODO: set origin marker on map(requires asset or use default marker image)
-              });
-            } else if (isDestination) {
-              setState(() {
-                isDestinationSet = true;
-              });
+            if (state == States.origin) {
+              setState(() => state = States.destinationSelect);
+              //TODO: set origin marker on map(requires asset or use default marker image)
+            } else if (state == States.destinationSelect) {
+              setState(() => state = States.serviceSelect);
               //TODO: set destination marker(requires asset or use default marker image)
             }
           },
         ));
   }
 
+  Future<bool> _onBackPressed() async {
+    if (state == States.serviceSelect) {
+      setState(() => state = States.destinationSelect);
+      return false;
+    } else if (state == States.destinationSelect) {
+      setState(() => state = States.origin);
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  bool _onBackArrowPressed() {
+    if (state == States.serviceSelect) {
+      setState(() => state = States.destinationSelect);
+      return false;
+    } else if (state == States.destinationSelect) {
+      setState(() => state = States.origin);
+      return false;
+    } else {
+      return true;
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    screenSize = MediaQuery.of(context).size;
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          S.of(context).map_screen_title,
-          style: TextStyle(fontSize: 16),
-        ),
-        actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {},
-          )
-        ],
-        centerTitle: true,
-        elevation: 0,
-      ),
-      drawer: _Drawer(),
-      body: Stack(
-        children: <Widget>[
-          GoogleMap(
-            mapType: MapType.normal,
-            onMapCreated: (controller) => _controller.complete(controller),
-            initialCameraPosition:
-                const CameraPosition(target: _kMapCenter, zoom: 15.0),
-            compassEnabled: false,
-            rotateGesturesEnabled: false,
-            tiltGesturesEnabled: false,
-            myLocationEnabled: true,
-            myLocationButtonEnabled: true,
-            cameraTargetBounds: CameraTargetBounds(_kIranBounds),
-            minMaxZoomPreference: const MinMaxZoomPreference(5, 20),
+    return WillPopScope(
+      child: Scaffold(
+        key: _scaffoldKey,
+        appBar: AppBar(
+          bottom: state == States.serviceSelect
+              ? PreferredSize(
+                  preferredSize: Size.fromHeight(56.0),
+                  child: SlideDown(
+                    child: Container(
+                      constraints: BoxConstraints.expand(height: 56),
+                      color: Constants.blue[1],
+                      child: Center(
+                        child: Text(
+                          'اسنپ به:',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
+                      ),
+                    ),
+                  ),
+                )
+              : PreferredSize(
+                  child: SizedBox.shrink(),
+                  preferredSize: Size.fromHeight(0),
+                ),
+          title: Text(
+            state == States.origin
+                ? S.of(context).map_screen_title
+                : (state == States.destinationSelect
+                    ? 'کجا می‌روید ؟'
+                    : 'سفر سلامت'),
+            style: TextStyle(fontSize: 16),
           ),
-          Align(
-            alignment: Alignment.bottomCenter,
-            child: AnimatedCrossFade(
+          actions: <Widget>[
+            AnimatedOpacity(
               duration: Duration(milliseconds: 500),
-              firstChild: _BottomPanel(
-                  key: UniqueKey(),
-                  topText: S.of(context).map_screen_origin + ":",
-                  bottomText: S.of(context).map_screen_destination + ":"),
-              secondChild: _BottomPanel(
-                key: UniqueKey(),
-                topText:
-                    '${Utils.replaceFarsiNumber('3')} ${S.of(context).map_screen_available_snapps}',
-                bottomText: S.of(context).map_screen_origin + ":",
+              opacity: state == States.serviceSelect ? 0.0 : 1.0,
+              child: SizedBox(
+                height: 56,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.search,
+                  ),
+                  onPressed: () {},
+                ),
               ),
-              crossFadeState: isDestination
+            ),
+            AnimatedCrossFade(
+              sizeCurve: Curves.easeInOutBack,
+              firstCurve: Curves.decelerate,
+              secondCurve: Curves.decelerate,
+              firstChild: SizedBox(
+                height: 56,
+                child: IconButton(
+                  icon: Icon(
+                    Icons.arrow_back_ios,
+                    textDirection: TextDirection.ltr,
+                  ),
+                  onPressed: () {
+                    if (_onBackArrowPressed()) {
+                      SystemNavigator.pop();
+                    }
+                  },
+                ),
+              ),
+              secondChild: SizedBox(),
+              crossFadeState: (state == States.serviceSelect ||
+                      state == States.destinationSelect)
                   ? CrossFadeState.showFirst
                   : CrossFadeState.showSecond,
+              duration: Duration(milliseconds: 500),
+            ),
+          ],
+          centerTitle: true,
+          elevation: 0,
+          primary: true,
+          brightness: Brightness.light,
+        ),
+        drawer: _Drawer(),
+        body: Stack(
+          children: <Widget>[
+            GoogleMap(
+              mapType: MapType.normal,
+              onMapCreated: (controller) => _controller.complete(controller),
+              initialCameraPosition: _kInitialPosition,
+              compassEnabled: false,
+              rotateGesturesEnabled: false,
+              tiltGesturesEnabled: false,
+              cameraTargetBounds: CameraTargetBounds(_kIranBounds),
+              minMaxZoomPreference: const MinMaxZoomPreference(5, 20),
+            ),
+            Align(
+              alignment: Alignment.bottomCenter,
+              child: state != States.serviceSelect
+                  ? AnimatedCrossFade(
+                      duration: Duration(milliseconds: 750),
+                      firstChild: _BottomPanel(
+                          topText: S.of(context).map_screen_origin + ":",
+                          bottomText:
+                              S.of(context).map_screen_destination + ":"),
+                      secondChild: _BottomPanel(
+                        topText:
+                            '${Utils.replaceFarsiNumber(math.Random().nextInt(10).toString())} ${S.of(context).map_screen_available_snapps}',
+                        bottomText: S.of(context).map_screen_origin + ":",
+                      ),
+                      crossFadeState: state == States.destinationSelect
+                          ? CrossFadeState.showFirst
+                          : CrossFadeState.showSecond,
+                    )
+                  : SizedBox.shrink(),
+            ),
+            state == States.serviceSelect
+                ? SizedBox.shrink()
+                : _createHoveringMarker(),
+          ],
+        ),
+        bottomSheet: SlideUp(
+          child: Container(
+            height: screenSize.height / 3.5,
+            child: Padding(
+              padding: const EdgeInsets.only(top: 8.0),
+              child: state == States.serviceSelect
+                  ? _ChooseServiceBottomSheet()
+                  : SizedBox(),
             ),
           ),
-          isDestinationSet ? SizedBox.shrink() : _createHoveringMarker(),
-        ],
-      ),
-      bottomSheet: Container(
-        height: MediaQuery.of(context).size.height / 3.5,
-        child: Padding(
-          padding: const EdgeInsets.only(top: 8.0),
-          child: isDestinationSet
-              ? _ChooseServiceBottomSheet()
-              : SizedBox.shrink(),
         ),
       ),
+      onWillPop: _onBackPressed,
     );
   }
 }
@@ -129,8 +231,6 @@ class _Drawer extends StatelessWidget {
         children: <Widget>[
           Expanded(
             child: ListView(
-              addAutomaticKeepAlives: true,
-              addRepaintBoundaries: false,
               padding: EdgeInsets.zero,
               children: <Widget>[
                 DrawerHeader(
@@ -193,6 +293,9 @@ class _Drawer extends StatelessWidget {
                   iconData: Icons.accessibility,
                   textColor: Constants.gray[4],
                   iconColor: Constants.gray[4],
+                  onTap: () {
+                    SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+                  },
                 ),
                 Divider(),
               ],
@@ -242,7 +345,7 @@ class _CreditDrawerItem extends StatelessWidget {
               padding: const EdgeInsetsDirectional.only(end: 12.0),
               child: Icon(Icons.account_balance_wallet),
             ),
-            Text(" ۱۰,۰۰۰ ریال"),
+            Text(" ۱۰,۰۰۰ ریال", style: TextStyle(fontSize: 16)),
             Spacer(),
             MaterialButton(
               elevation: 0,
@@ -284,6 +387,7 @@ class _DrawerItem extends StatelessWidget {
   final double iconSize;
   final double textSize;
   final FontWeight fontWeight;
+  final GestureTapCallback onTap;
 
   const _DrawerItem({
     @required this.title,
@@ -293,28 +397,32 @@ class _DrawerItem extends StatelessWidget {
     this.iconSize,
     this.textSize,
     this.fontWeight = FontWeight.bold,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-      child: Row(children: <Widget>[
-        Padding(
-          padding: const EdgeInsetsDirectional.only(end: 12.0),
-          child: Icon(
-            iconData,
-            color: iconColor,
-            textDirection: TextDirection.ltr,
-            size: iconSize,
+    return InkWell(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8.0),
+        child: Row(children: <Widget>[
+          Padding(
+            padding: const EdgeInsetsDirectional.only(end: 12.0),
+            child: Icon(
+              iconData,
+              color: iconColor,
+              textDirection: TextDirection.ltr,
+              size: iconSize,
+            ),
           ),
-        ),
-        Text(
-          title,
-          style: TextStyle(
-              color: textColor, fontSize: textSize, fontWeight: fontWeight),
-        ),
-      ]),
+          Text(
+            title,
+            style: TextStyle(
+                color: textColor, fontSize: textSize, fontWeight: fontWeight),
+          ),
+        ]),
+      ),
+      onTap: onTap,
     );
   }
 }
@@ -327,50 +435,58 @@ class _DestinationMarker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return InkWell(
       child: Container(
-        width: 65,
-        height: 100,
+        width: 80,
+        height: 130,
         child: Stack(
-          alignment: Alignment.center,
+          alignment: Alignment.topCenter,
           children: <Widget>[
-            PhysicalModel(
-              color: Colors.black,
-              shape: BoxShape.circle,
-              child: Container(
-                width: 55,
-                height: 55,
+            Positioned(
+              top: 0,
+              child: Stack(
+                alignment: Alignment.center,
+                children: <Widget>[
+                  PhysicalModel(
+                    color: Colors.black,
+                    shape: BoxShape.circle,
+                    child: Container(
+                      width: 55,
+                      height: 55,
+                    ),
+                  ),
+                  PhysicalModel(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    child: Container(
+                      width: 50,
+                      height: 50,
+                    ),
+                  ),
+                  PhysicalModel(
+                    color: Constants.green[1],
+                    shape: BoxShape.circle,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                    ),
+                  ),
+                  Text(
+                    title,
+                    style: TextStyle(color: Colors.white),
+                  ),
+                ],
               ),
             ),
-            PhysicalModel(
-              color: Colors.white,
-              shape: BoxShape.circle,
-              child: Container(
-                width: 50,
-                height: 50,
-              ),
-            ),
-            PhysicalModel(
-              color: Constants.green[1],
-              shape: BoxShape.circle,
-              child: Container(
-                width: 44,
-                height: 44,
-              ),
-            ),
-            Text(
-              title,
-              style: TextStyle(color: Colors.white),
-            ),
-            Align(
-              alignment: Alignment.bottomCenter,
+            Positioned(
+              top: 55,
               child: PhysicalModel(
+                elevation: 100,
                 color: Colors.black,
                 shape: BoxShape.rectangle,
-                elevation: 8,
                 child: Container(
                   width: 5,
-                  height: 25,
+                  height: 13,
                 ),
               ),
             ),
@@ -465,34 +581,44 @@ class _MyCircleAvatar extends StatelessWidget {
 
 class _ChooseServiceBottomSheet extends StatefulWidget {
   @override
-  __ChooseServiceBottomSheetState createState() =>
-      __ChooseServiceBottomSheetState();
+  _ChooseServiceBottomSheetState createState() =>
+      _ChooseServiceBottomSheetState();
 }
 
-class __ChooseServiceBottomSheetState extends State<_ChooseServiceBottomSheet>
+class _ChooseServiceBottomSheetState extends State<_ChooseServiceBottomSheet>
     with SingleTickerProviderStateMixin {
-  Animation animation;
-  AnimationController animationController;
-  bool isAnimationCompleted = false;
+  Animation _animation;
+  AnimationController _animController;
+  Size screenSize;
 
   @override
   void initState() {
     super.initState();
-    animationController =
-        AnimationController(duration: Duration(seconds: 3), vsync: this);
+    _animController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    );
 
-    animation = IntTween(begin: 45000, end: 21000).animate(CurvedAnimation(
-        parent: animationController, curve: Curves.fastOutSlowIn));
+    final curve = CurvedAnimation(
+      parent: _animController,
+      curve: Curves.fastOutSlowIn,
+    );
 
-    animationController.forward();
+    _animation = IntTween(begin: 65000, end: 21000).animate(curve);
 
-    animationController.addStatusListener((status) {
-      if (status == AnimationStatus.completed) {
-        setState(() {
-          isAnimationCompleted = true;
-        });
-      }
-    });
+    _animController.forward();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    screenSize = MediaQuery.of(context).size;
+  }
+
+  @override
+  void dispose() {
+    _animController.dispose();
+    super.dispose();
   }
 
   @override
@@ -507,6 +633,7 @@ class __ChooseServiceBottomSheetState extends State<_ChooseServiceBottomSheet>
             padding: EdgeInsets.symmetric(horizontal: 16.0),
             scrollDirection: Axis.horizontal,
             children: <Widget>[
+              // TODO: Implement selection
               _MyCircleAvatar(
                 imagePath: 'res/images/bike.png',
                 title: 'موتور ویژه مسافر',
@@ -527,7 +654,8 @@ class __ChooseServiceBottomSheetState extends State<_ChooseServiceBottomSheet>
           ),
         ),
         Expanded(
-          child: Padding(
+          flex: 2,
+          child: Container(
             padding: const EdgeInsets.symmetric(vertical: 4.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -544,21 +672,31 @@ class __ChooseServiceBottomSheetState extends State<_ChooseServiceBottomSheet>
                 ),
                 Row(
                   children: <Widget>[
-                    AnimatedBuilder(
-                      animation: animationController,
-                      builder: (BuildContext context, Widget child) {
-                        return Text(
-                          isAnimationCompleted
-                              ? '۶۰۰۰۰'
-                              : Utils.replaceFarsiNumber(
-                                  animation.value.toString()),
-                          style: TextStyle(
-                              fontSize: 20, fontWeight: FontWeight.bold),
-                        );
-                      },
+                    Container(
+                      child: AnimatedBuilder(
+                        animation: _animController,
+                        builder: (BuildContext context, Widget child) {
+                          return Text(
+                            _animController.status == AnimationStatus.completed
+                                ? '۶۰۰۰۰'
+                                : Utils.replaceFarsiNumber(
+                                    _animation.value.toString()),
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          );
+                        },
+                      ),
+                      width: 50,
                     ),
-                    SizedBox(width: 8.0,),
-                    Text('ریال'),
+                    SizedBox(
+                      width: 8.0,
+                    ),
+                    Text(
+                      'ریال',
+                      style: TextStyle(color: Constants.gray[3]),
+                    ),
                   ],
                 ),
                 VerticalDivider(
@@ -579,8 +717,7 @@ class __ChooseServiceBottomSheetState extends State<_ChooseServiceBottomSheet>
           color: Constants.blue[1],
           child: Container(
             height: 50,
-            margin: EdgeInsets.symmetric(
-                horizontal: MediaQuery.of(context).size.width / 4),
+            margin: EdgeInsets.symmetric(horizontal: screenSize.width / 4),
             child: Center(
                 child: Text(
               'درخواست اسنپ اکو',
