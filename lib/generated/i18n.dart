@@ -22,6 +22,8 @@ class S implements WidgetsLocalizations {
   TextDirection get textDirection => TextDirection.ltr;
 
   String get map_screen_available_snapps => "";
+  String get map_screen_bike_description => "";
+  String get map_screen_box_description => "";
   String get map_screen_destination => "";
   String get map_screen_drawer_about => "";
   String get map_screen_drawer_credit_plus => "";
@@ -35,7 +37,9 @@ class S implements WidgetsLocalizations {
   String get map_screen_drawer_support => "";
   String get map_screen_drawer_transactions => "";
   String get map_screen_drawer_usr_info => "";
+  String get map_screen_eco_description => "";
   String get map_screen_origin => "";
+  String get map_screen_rose_description => "";
   String get map_screen_title => "";
 }
 
@@ -56,6 +60,8 @@ class fa_IR extends S {
   @override
   String get map_screen_drawer_rides => "سفرها";
   @override
+  String get map_screen_box_description => "موتور ویژه مرسولات";
+  @override
   String get map_screen_drawer_about => "درباره اسنپ";
   @override
   String get map_screen_drawer_invite => "سفر رایگان با دعوت از دوستان";
@@ -75,6 +81,12 @@ class fa_IR extends S {
   String get map_screen_destination => "مقصد";
   @override
   String get map_screen_drawer_usr_info => "اطلاعات کاربری";
+  @override
+  String get map_screen_rose_description => "ویژه بانوان";
+  @override
+  String get map_screen_eco_description => "به\u200Cصرفه و فوری";
+  @override
+  String get map_screen_bike_description => "موتور ویژه مسافر";
   @override
   String get map_screen_drawer_transactions => "گردش حساب";
 }

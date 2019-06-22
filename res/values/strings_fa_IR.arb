@@ -14,5 +14,9 @@
   "map_screen_drawer_snapp_food_promotion": "با اسنپ فود، آنلاین غذا سفارش دهید",
   "map_screen_available_snapps": "اسنپ موجود",
   "map_screen_origin": "مبدأ",
-  "map_screen_destination": "مقصد"
+  "map_screen_destination": "مقصد",
+  "map_screen_bike_description": "موتور ویژه مسافر",
+  "map_screen_box_description": "موتور ویژه مرسولات",
+  "map_screen_rose_description": "ویژه بانوان",
+  "map_screen_eco_description": "به\u200Cصرفه و فوری"
 }

@@ -14,5 +14,9 @@
   "map_screen_drawer_snapp_food_promotion": "",
   "map_screen_available_snapps": "",
   "map_screen_origin": "",
-  "map_screen_destination": ""
+  "map_screen_destination": "",
+  "map_screen_bike_description": "",
+  "map_screen_box_description": "",
+  "map_screen_rose_description": "",
+  "map_screen_eco_description": ""
 }

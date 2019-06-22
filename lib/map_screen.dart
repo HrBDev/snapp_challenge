@@ -636,19 +636,19 @@ class _ChooseServiceBottomSheetState extends State<_ChooseServiceBottomSheet>
               // TODO: Implement selection
               _MyCircleAvatar(
                 imagePath: 'res/images/bike.png',
-                title: 'موتور ویژه مسافر',
+                title: S.of(context).map_screen_bike_description,
               ),
               _MyCircleAvatar(
                 imagePath: 'res/images/box.png',
-                title: ' موتور ویژه مرسولات',
+                title: S.of(context).map_screen_box_description,
               ),
               _MyCircleAvatar(
                 imagePath: 'res/images/rose.png',
-                title: 'ویژه بانوان',
+                title: S.of(context).map_screen_rose_description,
               ),
               _MyCircleAvatar(
                 imagePath: 'res/images/eco.png',
-                title: 'به‌صرفه و فوری',
+                title: S.of(context).map_screen_eco_description,
               ),
             ],
           ),
